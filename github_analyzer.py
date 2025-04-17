@@ -69,7 +69,7 @@ Changes:
 Generate professional documentation that follows a logical structure with proper headings and formatting. 
 The documentation should be comprehensive enough to be immediately useful to both technical and non-technical stakeholders. 
 Keep documentation length appropriately based on the significance of the changes.
-                """
+                 """
 
     prompt = PromptTemplate(
         input_variables=["repo_name", "commit_sha", "author", "message", "diff"],
