@@ -11,7 +11,7 @@ from github_release_analyzer import generate_release_note
 # from github_analyzer import analyze_commit
 
 #loading the environment variables from .env file
-# load_dotenv()
+load_dotenv()
 
 app = Flask(__name__)
 
