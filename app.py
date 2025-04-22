@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import json
 import os
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 from github_analyzer import analyze_commit
 from CustomException import *
 from github_release_analyzer import generate_release_note
