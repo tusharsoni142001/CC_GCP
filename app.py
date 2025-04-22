@@ -81,6 +81,40 @@ def webhook():
         "repo_name" : payload['repository']['name']
     }),200
 
+@app.route('/release-webhook', methods=['POST'])
+def release_webhook():
+    event_type = request.headers.get('X-Github-Event')
+
+    if(event_type != 'release'):
+        return jsonify({'message': 'Event not supported'}), 400
+        
+    payload = request.json
+
+    #Extract release release information
+    repo_owner = payload['repository']['owner']['login']
+    repo_name = payload['repository']['name']
+    release_tag = payload['release']['tag_name']
+    release_name = payload['release']['name']
+    release_body = payload['release']['body']
+    created_at = payload['release']['created_at']
+
+    try:
+        release_note_path = generate_release_note(
+            repo_owner, repo_name, release_tag, release_name, release_body, created_at
+        )
+
+        return jsonify({
+            'message':'Release note generated successfully',
+            'release': release_tag,
+            'path':release_note_path
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'message': str(e),
+            'release': release_tag
+        }), 500
+    
+
 @app.route('/', methods=['GET'])
 def home():
     """Simple endpoint to verify the server is running"""

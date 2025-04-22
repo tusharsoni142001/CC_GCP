@@ -14,12 +14,12 @@ load_dotenv()
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./output")
+# OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./output")
 bucket_name = os.getenv("BUCKET_NAME")
 key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 #Ensure output directory exists
-Path(OUTPUT_DIR).mkdir(exist_ok=True)
+# Path(OUTPUT_DIR).mkdir(exist_ok=True)
 
 # Configure llm
 def setup_llm():
@@ -207,7 +207,7 @@ def analyze_commit(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA,branch_name):
     
     #save explanation to file
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{timestamp}_{GITHUB_REPO}_{COMMIT_SHA}.txt"
+    # filename = f"{timestamp}_{GITHUB_REPO}_{COMMIT_SHA}.txt"
     # filepath = os.path.join(OUTPUT_DIR, filename)
 
 
