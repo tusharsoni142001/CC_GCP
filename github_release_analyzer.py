@@ -13,7 +13,8 @@ load_dotenv()
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-bucket_name = os.getenv("PROJECT_NAME")
+bucket_name_release = os.getenv("PROJECT_NAME")
+bucket_name_commit = os.getenv("BUCKET_NAME")
 key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 def generate_release_note(repo_owner, repo_name, release_tag, release_name, release_body, created_at):
@@ -27,9 +28,9 @@ def generate_release_note(repo_owner, repo_name, release_tag, release_name, rele
     for commit in commits:
         commit_sha = commit["sha"]
 
-        doc_path = find_commit_documentation(bucket_name, repo_owner, repo_name, commit_sha)
+        doc_path = find_commit_documentation(bucket_name_commit, repo_owner, repo_name, commit_sha)
         if doc_path:
-            doc_content = read_gcs_file(bucket_name, doc_path)
+            doc_content = read_gcs_file(bucket_name_commit, doc_path)
             commit_docs.append({
                 'documentation': doc_content,
             })
@@ -46,9 +47,9 @@ def generate_release_note(repo_owner, repo_name, release_tag, release_name, rele
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     blob_name = f"{repo_name}/releases/{release_tag}/{timestamp}_release_note.md"
 
-    upload_to_gcs(bucket_name, blob_name, repo_owner, repo_name, release_tag, release_name,created_at, release_notes)
+    upload_to_gcs(bucket_name_release, blob_name, repo_owner, repo_name, release_tag, release_name,created_at, release_notes)
 
-    return f"gs://{bucket_name}/{blob_name}"
+    return f"gs://{bucket_name_release}/{blob_name}"
 
 def get_previous_release_tag(repo_owner, repo_name, release_tag):
     url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases"
