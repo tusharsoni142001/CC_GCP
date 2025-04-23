@@ -1,20 +1,20 @@
 import json
 import os
-# import requests
+import requests
 import datetime
 from pathlib import Path
-# from dotenv import load_dotenv
-# from langchain.prompts import PromptTemplate
-# from langchain_groq import ChatGroq
+from dotenv import load_dotenv
+from langchain.prompts import PromptTemplate
+from langchain_groq import ChatGroq
 from google.cloud import storage
 from CustomException import *
 
 load_dotenv()
 
-# GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-# GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-# bucket_name = os.getenv("PROJECT_NAME")
-# key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+bucket_name = os.getenv("PROJECT_NAME")
+key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 def generate_release_note(repo_owner, repo_name, release_tag, release_name, release_body, created_at):
 

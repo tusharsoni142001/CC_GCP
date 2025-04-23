@@ -122,6 +122,6 @@ def home():
     return "GitHub Code Documentation Webhook is running!"
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 5000))
+    port = int(os.getenv("PORT", 8080))
     app.run(host='0.0.0.0', port=port, debug=True)
     

@@ -6,7 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq
-from langchain.chains import LLMChain
+# from langchain.chains import LLMChain
 from google.cloud import storage
 from CustomException import *
 
