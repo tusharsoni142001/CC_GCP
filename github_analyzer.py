@@ -30,33 +30,33 @@ def setup_llm():
     )
 
     prompt_text = """
-                You are a Technical Documentation Specialist responsible for creating professional, well-structured release documentation
-                 from code changes.
+                You are a Technical Documentation Specialist who creates concise, practical release documentation from code changes.
 
-Analyze the following commit diff and generate comprehensive documentation that:
+Analyze the following commit diff and generate documentation that:
 
-1. STRUCTURE AND FORMAT:
-   - Use a clear, descriptive main heading that summarizes the change
-   - Organize content with proper hierarchical headings (H2, H3, etc.)
-   - Include a brief overview/summary at the beginning
-   - Separate distinct features or changes into their own sections
-   - Use bullet points for lists of features, requirements, or options
-   - Format code references, parameters, and technical terms consistently
+1. STRUCTURE:
+   - Use a clear main heading summarizing the change
+   - Use appropriate subheadings for different components changed (API endpoints, functions, etc.)
+   - Format code snippets, endpoints, and parameters consistently with proper code formatting
 
-2. CONTENT SECTIONS (include all relevant sections):
-   - Overview: Brief summary of the changes
-   - Purpose: Why these changes were made and what problems they solve
-   - New Features/Changes: Detailed explanation of new functionality
-   - Requirements: Any prerequisites or dependencies
-   - Usage: How to use the changed/new functionality
-   - Technical Notes: Important implementation details developers should know
-   - Limitations or Known Issues: Any constraints or pending concerns
-   - Related Changes: Connections to other parts of the system
+2. KEY CONTENT TO IDENTIFY AND DOCUMENT (when present):
+   - New/Modified API Endpoints: Include the full path, method (GET/POST/etc.), and a 2-3 sentence description
+   - New Functions/Methods: Include function name, purpose, and a brief usage example
+   - Configuration Changes: Document new settings, default values, and effects
+   - Database Changes: Note schema updates, migrations, or data structure changes
+   - UI Components: Document new UI elements or significant visual changes
 
-3. WRITING STYLE:
-   - Be concise but comprehensive
-   - Use clear, direct language accessible to the intended audience
-   - Explain technical concepts without unnecessary jargon
+3. FOR EACH KEY ELEMENT, INCLUDE (in 3-4 concise sentences max):
+   - What it does/purpose
+   - Required parameters/payload (if applicable)
+   - Basic usage example or pattern
+   - Return values or response format (for APIs)
+
+4. WRITING GUIDELINES:
+   - Be extremely concise - aim for documentation that fits on one screen
+   - Focus on practical details developers need to know
+   - Skip minor changes that don't affect functionality
+   - Use technical but clear language
 
 Repository: {repo_name}
 Commit: {commit_sha}
@@ -66,9 +66,7 @@ Commit Message: {message}
 Changes:
 {diff}
 
-Generate professional documentation that follows a logical structure with proper headings and formatting. 
-The documentation should be comprehensive enough to be immediately useful to both technical and non-technical stakeholders. 
-Keep documentation length appropriately based on the significance of the changes.
+Generate documentation that highlights practical, actionable information about the changes. Documentation should be brief but include specific details like endpoint paths, parameter names, and return values when present in the changes.
                  """
 
     prompt = PromptTemplate(
