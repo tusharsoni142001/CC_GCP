@@ -9,6 +9,10 @@ from langchain_groq import ChatGroq
 # from langchain.chains import LLMChain
 from google.cloud import storage
 from CustomException import *
+import certifi
+from httpx import Client
+
+
 
 load_dotenv()
 
@@ -18,11 +22,17 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 bucket_name = os.getenv("BUCKET_NAME")
 key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
+
+
 #Ensure output directory exists
 # Path(OUTPUT_DIR).mkdir(exist_ok=True)
 
 # Configure llm
 def setup_llm():
+
+
+
+    # Pass the preconfigured client to ChatGroq
     llm = ChatGroq(
         groq_api_key=GROQ_API_KEY,
         model_name="llama-3.3-70b-versatile",
@@ -78,31 +88,27 @@ Generate documentation that highlights practical, actionable information about t
 
     #get commit details using github api
 def get_commit_details(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA):
+
+    
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"  # Explicitly request v3 API
     }
 
-    # Print detailed debugging info
-    # print(f"Making GitHub API request for commit details:")
-    # print(f"  Repository: {GITHUB_OWNER}/{GITHUB_REPO}")
-    # print(f"  Commit SHA: {COMMIT_SHA}")
-    # print(f"  Token permissions: {'***' + GITHUB_TOKEN[-4:] if GITHUB_TOKEN else 'None'}")
-
     url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/commits/{COMMIT_SHA}"
-
-    response = requests.get(url,headers=headers)
-
-    # print(response.content)
-
-    if response.status_code == 200:
-        print(f"Successfully retrieved commit details for {COMMIT_SHA} in {GITHUB_REPO}.")
-        return response.json()
-    elif response.status_code == 404:
-        raise CommitNotFoundError(f"Commit {COMMIT_SHA} not found in {GITHUB_REPO}.")
-    else:
-        raise Exception (f"Error getting commit details: {response.status_code} - {response.text}")
     
+    try:
+        response = requests.get(url,headers=headers)
+
+        if response.status_code == 200:
+            print(f"Successfully retrieved commit details for {COMMIT_SHA} in {GITHUB_REPO}.")
+            return response.json()
+        elif response.status_code == 404:
+            raise CommitNotFoundError(f"Commit {COMMIT_SHA} not found in {GITHUB_REPO}.")
+        else:
+            raise GitHubAPIError (f"Error getting commit details: {response.status_code} - {response.text}")
+    except requests.exceptions.RequestException as e:
+        raise GitHubAPIError(f"Error connecting to GitHub API: {str(e)}")
 
     #get commit diff using github api
 def get_commit_diff(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA):
@@ -110,18 +116,20 @@ def get_commit_diff(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA):
                "Accept": "application/vnd.github.v3.diff"}
 
     url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/commits/{COMMIT_SHA}"    
-    response = requests.get(url, headers=headers)
 
-    if response.status_code == 200:
-        try:
-            # Make sure we're properly parsing the JSON response
-            print(f"Successfully retrieved commit diff for {COMMIT_SHA} in {GITHUB_REPO}.")
-            return response.text
-        except Exception as e:
-            print(f"Error retrieving commit diff: {e}")
-            return None
-    else:
-        return f"Error getting commit diff: {response.status_code} - {response.text}"
+    try:
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+                # Make sure we're properly parsing the JSON response
+                print(f"Successfully retrieved commit diff for {COMMIT_SHA} in {GITHUB_REPO}.")
+                return response.text
+        elif response.status_code == 404:
+            raise CommitNotFoundError(f"Commit {COMMIT_SHA} not found in {GITHUB_REPO}.")
+        else:
+            raise GitHubAPIError (f"Error getting commit details: {response.status_code} - {response.text}")
+    except requests.exceptions.RequestException as e:
+        raise GitHubAPIError(f"Error connecting to GitHub API: {str(e)}")
     
     #save explanation to gcs bucket
 def upload_to_gcs(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA, bucket_name, blob_name,author_name,author_email,commit_date,commit_message,explanation,branch_name):
@@ -131,18 +139,21 @@ def upload_to_gcs(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA, bucket_name, blob_name,a
 
         blob.content_type = "text/plain"
 
-        with blob.open("w") as f:
-            f.write(f"Repository: {GITHUB_OWNER}/{GITHUB_REPO}\n")
-            f.write(f"Commit: {COMMIT_SHA}\n")
-            f.write(f"Branch: {branch_name}\n")
-            f.write(f"Author: {author_name} <{author_email}>\n")
-            f.write(f"Date: {commit_date}\n")
-            f.write(f"Message: {commit_message}\n")
-            f.write("\n\n")
-            f.write("*"*80+"\n\n")
-            f.write(explanation)
-        
-        return f"gs://{bucket_name}/{blob_name}"
+        try:
+            with blob.open("w") as f:
+                f.write(f"Repository: {GITHUB_OWNER}/{GITHUB_REPO}\n")
+                f.write(f"Commit: {COMMIT_SHA}\n")
+                f.write(f"Branch: {branch_name}\n")
+                f.write(f"Author: {author_name} <{author_email}>\n")
+                f.write(f"Date: {commit_date}\n")
+                f.write(f"Message: {commit_message}\n")
+                f.write("\n\n")
+                f.write("*"*80+"\n\n")
+                f.write(explanation)
+        except GoogleCloudStorageError as e:
+            raise GoogleCloudStorageError(f"Error uploading to GCS: {e}")
+        else:
+            return f"gs://{bucket_name}/{blob_name}"
 
     #analyze github commit 
 def analyze_commit(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA,branch_name):
@@ -154,7 +165,7 @@ def analyze_commit(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA,branch_name):
 
     if not commit_data:
         print(f"Could not analyze commit {COMMIT_SHA} in {GITHUB_REPO}.")
-        return None
+        raise AnalyzerError(f"Could not analyze commit {COMMIT_SHA} in {GITHUB_REPO}.")
     
     # Debug - Print what we received
     print(f"Commit data type: {type(commit_data)}")
@@ -164,11 +175,14 @@ def analyze_commit(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA,branch_name):
         print(f"Error: Expected dictionary but got {type(commit_data)}")
         return commit_data
     
-    commit_diff = get_commit_diff(GITHUB_OWNER, GITHUB_REPO, COMMIT_SHA)
+    try:
+        commit_diff = get_commit_diff(GITHUB_OWNER, GITHUB_REPO, COMMIT_SHA)
+    except CommitNotFoundError as e:
+        raise
 
     if not commit_diff:
         print(f"Could not analyze commit {COMMIT_SHA} in {GITHUB_REPO}.")
-        return None
+        raise AnalyzerError(f"Could not analyze commit {COMMIT_SHA} in {GITHUB_REPO}.")
     
     #commit data
     try:
@@ -200,8 +214,9 @@ def analyze_commit(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA,branch_name):
             explanation = str(response)
     
     except Exception as e:
-        print(f"Error generating explanation: {e}")
-        return None
+        raise (f"Error generating explanation: {e}")
+        # Return error details as a structured response
+       
     
     #save explanation to file
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -227,8 +242,8 @@ def analyze_commit(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA,branch_name):
             gcs_path = upload_to_gcs(GITHUB_OWNER,GITHUB_REPO, COMMIT_SHA, bucket_name,blob_name,author_name,author_email,commit_date,commit_message,explanation,branch_name)
             return gcs_path
         except Exception as e:
-            raise AnalyzerError(f"Error uploading to GCS: {e}")
+            raise GoogleCloudStorageError(f"Error uploading to GCS: {e}")
     else:
-        raise AnalyzerError("No GCS bucket found")
+        raise GoogleCloudStorageError("No GCS bucket found")
     
 
