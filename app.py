@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from github_analyzer import analyze_commit
 from github_release_analyzer import generate_release_note
 from CustomException import *
-
+import asyncio
 
 load_dotenv()
 
@@ -59,7 +59,7 @@ def webhook():
                 continue
 
             # Analyzing the commit using the analyze_commit function
-            result = analyze_commit(repo_owner, repo_name, commit_sha, branch_name)
+            result = asyncio.run(analyze_commit(repo_owner, repo_name, commit_sha, branch_name))
             
             if result:
                 results.append({

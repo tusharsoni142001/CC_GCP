@@ -167,18 +167,12 @@ def format_previous_documentation_context(previous_docs):
 
 # Configure llm
 def setup_llm():
-    # Create a custom HTTP client with verification disabled
-    http_client = Client(
-        verify=False,  # Disable SSL verification
-        timeout=60.0   # Optional timeout setting
-    )
 
     # Pass the preconfigured client to ChatGroq
     llm = ChatGroq(
         groq_api_key=GROQ_API_KEY,
         model_name="llama-3.3-70b-versatile",
-        temperature=0.2,
-        http_client=http_client  # Use the custom client with verification disabled
+        temperature=0.2
     )
 
     prompt_text = """

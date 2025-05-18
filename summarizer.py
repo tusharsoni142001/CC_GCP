@@ -15,19 +15,13 @@ async def summarize_with_llm_async(text, content_type, max_length=300):
         return text
     
 
-        # Create a custom HTTP client with verification disabled
-    http_client = Client(
-        verify=False,  # Disable SSL verification
-        timeout=60.0   # Optional timeout setting
-    )
-
+ 
     
     # Use a faster/smaller model for summarization if available
     summarizer_llm = ChatGroq(
         groq_api_key=GROQ_API_KEY,
         model_name="llama-3.1-8b-instant",  # Smaller model for summarization
-        temperature=0.1,
-        http_client=http_client 
+        temperature=0.1
     )
     
     # Different prompts for different content types
