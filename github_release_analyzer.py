@@ -9,7 +9,8 @@ from langchain_groq import ChatGroq
 from langchain.chains import LLMChain
 from google.cloud import storage
 from CustomException import *
-
+from httpx import Client
+from utils import summarize_with_llm_async,get_repository_readme_async
 load_dotenv()
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
@@ -19,7 +20,7 @@ bucket_name_release = os.getenv("PROJECT_NAME")
 bucket_name_commit = os.getenv("BUCKET_NAME")
 key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
-def generate_release_note(repo_owner, repo_name, release_tag, release_name, release_body, created_at):
+async def generate_release_note(repo_owner, repo_name, release_tag, release_name, release_body, created_at):
     try:
         previous_tag = get_previous_release_tag(repo_owner, repo_name, release_tag)
 
@@ -29,9 +30,9 @@ def generate_release_note(repo_owner, repo_name, release_tag, release_name, rele
         for commit in commits:
             try:
                 commit_sha = commit["sha"]
-                doc_path = find_commit_documentation(bucket_name_commit, repo_owner, repo_name, commit_sha)
+                doc_path = find_commit_documentation(bucket_name_commit, repo_name, commit_sha)
                 if doc_path:
-                    doc_content = read_gcs_file(bucket_name_commit, doc_path)
+                    doc_content = await read_gcs_file(bucket_name_commit, doc_path)
                     commit_docs.append({
                         'documentation': doc_content,
                     })
@@ -39,7 +40,12 @@ def generate_release_note(repo_owner, repo_name, release_tag, release_name, rele
                 # Log but continue processing other commits
                 print(f"Warning: Could not read documentation for commit {commit_sha}: {str(e)}")
                 continue
-        
+
+            #Gather project context
+        readme_content = await get_repository_readme_async(repo_owner, repo_name)
+        project_context = await summarize_with_llm_async(readme_content, "readme")
+        print(f"Project context: {project_context}")
+            
         release_notes = generate_note(
             repo_name,
             release_tag,
@@ -118,7 +124,7 @@ def get_commits_between_tags(repo_owner, repo_name, previous_tag, release_tag):
     except requests.exceptions.RequestException as e:
         raise GitHubAPIError(f"Error connecting to GitHub API: {str(e)}")
     
-def find_commit_documentation(bucket_name, repo_owner, repo_name, commit_sha):
+def find_commit_documentation(bucket_name, repo_name, commit_sha):
     if not bucket_name:
         raise GoogleCloudStorageError("No commit documentation bucket specified")
         
@@ -136,7 +142,7 @@ def find_commit_documentation(bucket_name, repo_owner, repo_name, commit_sha):
     except Exception as e:
         raise GoogleCloudStorageError(f"Error finding commit documentation: {str(e)}")
 
-def read_gcs_file(bucket_name, blob_name):
+async def read_gcs_file(bucket_name, blob_name):
     if not bucket_name or not blob_name:
         raise GoogleCloudStorageError("Missing bucket name or blob name")
         
@@ -149,7 +155,7 @@ def read_gcs_file(bucket_name, blob_name):
             return None
         
         with blob.open("r") as f:
-            return f.read()
+            return await summarize_with_llm_async(f.read())
     except Exception as e:
         raise GoogleCloudStorageError(f"Error reading file from GCS: {str(e)}")
     
@@ -158,10 +164,16 @@ def generate_note(repo_name, release_tag, release_name, previous_tag, release_bo
         raise AnalyzerError("GROQ API key not configured")
         
     try:
+        http_client = Client(
+        verify=False,  # Disable SSL verification
+        timeout=60.0   # Optional timeout setting
+    )
+        
         llm = ChatGroq(
             groq_api_key=GROQ_API_KEY,
             model_name="llama-3.3-70b-versatile",
-            temperature=0.2
+            temperature=0.2,
+            http_client=http_client
         )
 
         prompt_text = ''' You are a Technical Documentation Specialist tasked with creating comprehensive release notes.
@@ -183,6 +195,9 @@ def generate_note(repo_name, release_tag, release_name, previous_tag, release_bo
         
         Here are the commits included in this release:
         {commit_docs}
+
+        ## Project Context:
+        {project_context}
         
         Format the release notes with clear Markdown headings, bullet points for individual changes, and code blocks where appropriate.
         Be specific about changes but maintain a professional tone suitable for both technical and non-technical readers.
@@ -190,6 +205,8 @@ def generate_note(repo_name, release_tag, release_name, previous_tag, release_bo
         Ensure the release notes are easy to read and understand, with a focus on clarity and conciseness. And make sure to include the date of the release.
         Even if the commits don't have new features or improvements , then generate changes based on the commit messages.
         If there are no changes, then generate a message indicating that there are no changes in this release.
+
+        Use the project context to better understand the purpose of the commits and how they've evolved. Reference previous changes when relevant to provide continuity in the release note.
         '''
 
         prompt = PromptTemplate(

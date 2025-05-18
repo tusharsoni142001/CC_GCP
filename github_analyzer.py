@@ -11,7 +11,7 @@ from google.cloud import storage
 from CustomException import *
 import certifi
 from httpx import Client
-from summarizer import summarize_with_llm_async
+from utils import summarize_with_llm_async, get_repository_readme_async
 
 
 
@@ -27,27 +27,6 @@ key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 
 #llm context awarness implementation
-
-#Extract project readme files from repo to understand the project goal or purpose
-async def get_repository_readme_async(GITHUB_OWNER, GITHUB_REPO):
-    """Get the README content to understand project purpose"""
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-
-
-    # Try common README filenames
-    for filename in ["README.md", "README.txt", "README", "Readme.md"]:
-            url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/contents/{filename}"
-            response = requests.get(url, headers=headers)
-            
-            if response.status_code == 200:
-                content = response.json().get("content", "")
-                if content:
-                    # GitHub returns content as base64 encoded
-                    import base64
-                    # print(f"Successfully retrieved redme file: {base64.b64decode(content).decode('utf-8')}")
-                    return base64.b64decode(content).decode('utf-8'),"readme"
-    
-    return "No README found"
 
 #Function to get changed files in current commit
 def get_changed_files_from_commit(commit_data):

@@ -3,19 +3,18 @@ from langchain.prompts import PromptTemplate
 import os
 from dotenv import load_dotenv
 from httpx import Client
-import asyncio
+import requests
+from dotenv import load_dotenv
 
 load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 async def summarize_with_llm_async(text, content_type, max_length=300):
     """Use LLM to intelligently summarize any text"""
     if not text or len(text) < max_length:
         return text
-    
-
- 
     
     # Use a faster/smaller model for summarization if available
     summarizer_llm = ChatGroq(
@@ -45,6 +44,7 @@ async def summarize_with_llm_async(text, content_type, max_length=300):
                            
                            {text}
                            
+                           Keep Repository, Commit, Branch, Author, Date, Message heading as it is.
                            SUMMARY:"""
     }
     
@@ -60,3 +60,25 @@ async def summarize_with_llm_async(text, content_type, max_length=300):
     if hasattr(response, "content"):
         return response.content
     return str(response)
+
+
+#Extract project readme files from repo to understand the project goal or purpose
+async def get_repository_readme_async(GITHUB_OWNER, GITHUB_REPO):
+    """Get the README content to understand project purpose"""
+    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+
+
+    # Try common README filenames
+    for filename in ["README.md", "README.txt", "README", "Readme.md"]:
+            url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/contents/{filename}"
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                content = response.json().get("content", "")
+                if content:
+                    # GitHub returns content as base64 encoded
+                    import base64
+                    # print(f"Successfully retrieved redme file: {base64.b64decode(content).decode('utf-8')}")
+                    return base64.b64decode(content).decode('utf-8'),"readme"
+    
+    return "No README found"

@@ -6,6 +6,12 @@ from github_analyzer import analyze_commit
 from github_release_analyzer import generate_release_note
 from CustomException import *
 import asyncio
+import os
+import certifi
+
+# Set certificate path from certifi
+os.environ['SSL_CERT_FILE'] = certifi.where()
+os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
 
 load_dotenv()
 
@@ -149,9 +155,9 @@ def release_webhook():
         }), 400
 
     try:
-        release_note_path = generate_release_note(
+        release_note_path = asyncio.run(generate_release_note(
             repo_owner, repo_name, release_tag, release_name, release_body, created_at
-        )
+        ))
 
         return jsonify({
             'message': 'Release note generated successfully',
