@@ -52,7 +52,8 @@ async def generate_release_note(repo_owner, repo_name, release_tag, release_name
             release_name,
             previous_tag,
             release_body,
-            commit_docs
+            commit_docs,
+            project_context
         )
 
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -159,7 +160,7 @@ async def read_gcs_file(bucket_name, blob_name):
     except Exception as e:
         raise GoogleCloudStorageError(f"Error reading file from GCS: {str(e)}")
     
-def generate_note(repo_name, release_tag, release_name, previous_tag, release_body, commit_docs):
+def generate_note(repo_name, release_tag, release_name, previous_tag, release_body, commit_docs, project_context):
     if not GROQ_API_KEY:
         raise AnalyzerError("GROQ API key not configured")
         
@@ -210,7 +211,7 @@ def generate_note(repo_name, release_tag, release_name, previous_tag, release_bo
         '''
 
         prompt = PromptTemplate(
-            input_variables=["repo_name", "release_tag", "release_name", "previous_tag", "release_body", "commit_docs"],
+            input_variables=["repo_name", "release_tag", "release_name", "previous_tag", "release_body", "commit_docs","project_context"],
             template=prompt_text
         )
         
