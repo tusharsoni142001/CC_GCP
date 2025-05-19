@@ -223,7 +223,8 @@ def generate_note(repo_name, release_tag, release_name, previous_tag, release_bo
             "release_name": release_name,
             "previous_tag": previous_tag or "initial release",
             "release_body": release_body,
-            "commit_docs": commit_docs
+            "commit_docs": commit_docs,
+            "project_context": project_context
         })
         
         if hasattr(response, "content"):
