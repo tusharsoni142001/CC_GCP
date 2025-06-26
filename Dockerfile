@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py github_analyzer.py CustomException.py github_release_analyzer.py utils.py ./
+COPY app.py github_analyzer.py CustomException.py github_release_analyzer.py utils.py gitlab_analyzer.py gitlab_release_analyzer.py ./
 
 RUN touch .env
 
