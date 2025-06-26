@@ -1,3 +1,4 @@
+# utils.py with GitLab additions
 from langchain_groq import ChatGroq
 from langchain.prompts import PromptTemplate
 import os
@@ -5,13 +6,15 @@ from dotenv import load_dotenv
 from httpx import Client
 import requests
 from dotenv import load_dotenv
+import base64
 
 load_dotenv()
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITLAB_TOKEN = os.getenv("GITLAB_TOKEN")
 
-async def summarize_with_llm_async(text, content_type, max_length=300):
+async def summarize_with_llm_async(text, content_type="documentation", max_length=300):
     """Use LLM to intelligently summarize any text"""
     if not text or len(text) < max_length:
         return text
@@ -61,12 +64,10 @@ async def summarize_with_llm_async(text, content_type, max_length=300):
         return response.content
     return str(response)
 
-
 #Extract project readme files from repo to understand the project goal or purpose
 async def get_repository_readme_async(GITHUB_OWNER, GITHUB_REPO):
     """Get the README content to understand project purpose"""
     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-
 
     # Try common README filenames
     for filename in ["README.md", "README.txt", "README", "Readme.md"]:
@@ -79,6 +80,26 @@ async def get_repository_readme_async(GITHUB_OWNER, GITHUB_REPO):
                     # GitHub returns content as base64 encoded
                     import base64
                     # print(f"Successfully retrieved redme file: {base64.b64decode(content).decode('utf-8')}")
-                    return base64.b64decode(content).decode('utf-8'),"readme"
+                    return base64.b64decode(content).decode('utf-8')
+    
+    return "No README found"
+
+# GitLab-specific functions
+async def get_repository_readme_gitlab(project_id):
+    """Get the README content from GitLab to understand project purpose"""
+    headers = {"Authorization": f"Bearer {GITLAB_TOKEN}"}
+
+    # Try common README filenames
+    for filename in ["README.md", "README.txt", "README", "Readme.md"]:
+        url = f"https://gitlab.com/api/v4/projects/{project_id}/repository/files/{filename}/raw"
+        
+        try:
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                # GitLab returns the raw content directly
+                return response.text
+        except requests.exceptions.RequestException:
+            continue
     
     return "No README found"
